@@ -1,6 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import PuppeteerController from './controllers/puppeteerController.js';
+import path from 'path';
 
 dotenv.config();
 
@@ -12,6 +13,9 @@ const puppeteerController = new PuppeteerController({ userDataDir: USER_DATA_DIR
 
 app.use(express.json());
 app.use(express.static('public'));
+
+// Serve screenshots statically
+app.use('/screenshots', express.static(path.resolve('screenshots')));
 
 // Initialize Puppeteer
 puppeteerController.init().catch(error => {
@@ -28,8 +32,12 @@ app.post('/api/search-image', async (req, res) => {
     }
 
     try {
-        await puppeteerController.searchWithImage(imageUrl);
-        return res.status(200).json({ success: true, message: 'Image search completed.' });
+        const screenshotPath = await puppeteerController.searchWithImage(imageUrl);
+        return res.status(200).json({
+            success: true,
+            message: 'Image search completed.',
+            screenshotPath: `screenshots/${path.basename(screenshotPath)}`, // Relative path for frontend
+        });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
